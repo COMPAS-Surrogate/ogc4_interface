@@ -1,6 +1,8 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 import numpy as np
+from tqdm.auto import tqdm
 
 from .summary import Summary
 from .logger import logger
@@ -74,8 +76,26 @@ class PopulationMcZ:
             weights[i] = weights[i] / np.sum(weights[i])
         weights = np.nansum(weights, axis=0)
         assert weights.shape == (len(self.z_bins), len(self.mc_bins))
-        ax = plot_weights(weights, self.mc_bins, self.z_bins)
+        s = Summary.load()
+        ax = s.plot(pastro_threshold=self.pastro_threshold)
+        ax = plot_weights(weights, self.mc_bins, self.z_bins,ax=ax)
         fig = ax.get_figure()
         fig.suptitle(f"OGC4 Population normalised weights (n={self.n_events})")
         return ax
+
+
+    def plot_individuals(self, outdir):
+        os.makedirs(outdir, exist_ok=True)
+        weights = self.weights.copy()
+        s = Summary.load()
+        for i, name in tqdm(enumerate(self.event_names)):
+            w = weights[i]
+            w = w / np.sum(w)
+            # get mc and z values for this event from summary
+            mc, z = s.get_mcz_for(name)
+            ax = plot_weights(w, self.mc_bins, self.z_bins)
+            ax.set_title(f"{name} (mc={mc:.2f}M, z={z:.2f})")
+            ax.scatter(z, mc, color='k', s=1)
+            plt.savefig(f"{outdir}/weights_{name}.png")
+
 

@@ -8,6 +8,7 @@ from typing import List
 from .logger import logger
 from .utils import BASE_URL
 from .event import Event
+from .plotting import plot_scatter
 
 PE_TABLE_URL = f"{BASE_URL}/posterior/PEtable.txt"
 SEARCH_TABLE_URL = f"{BASE_URL}/search/4OGC_top.txt"
@@ -69,4 +70,15 @@ class Summary():
         return 0 if self._data is None else len(self._data)
 
     def get_pastro_threholded_event_names(self, pastro_threshold)->List[str]:
-        return self._data[self._data['Pastro'] >= pastro_threshold]['Name'].values
+        return self.get_filtered_data(pastro_threshold)['Name'].values
+
+    def get_filtered_data(self, pastro_threshold:float):
+        return self._data[self._data['Pastro'] >= pastro_threshold]
+
+    def plot(self, ax=None, pastro_threshold=0.95, bounds=None):
+        d = self.get_filtered_data(pastro_threshold)[['redshift','srcmchirp']].values
+        ax = plot_scatter(d, ax=ax, bounds=bounds)
+        return ax
+
+    def get_mcz_for(self, event_name:str):
+        return self._data[self._data['Name'] == event_name][['srcmchirp','redshift']].values[0]

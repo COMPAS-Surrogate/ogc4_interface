@@ -93,10 +93,15 @@ class Event:
         weights = np.zeros((n_z_bins, n_mc_bins))
 
         for mc, z in tqdm(self.posterior_samples, desc=f"Weights[{self.name}]"):
+            # check if the mc and z are within the bins
+            in_mbin = mc_bins[0] <= mc <= mc_bins[-1]
+            in_zbin = z_bins[0] <= z <= z_bins[-1]
+            if not (in_mbin and in_zbin):
+                continue
+
             mc_bin = np.argmin(np.abs(mc_bins - mc))
             z_bin = np.argmin(np.abs(z_bins - z))
-            if mc_bin < n_mc_bins and z_bin < n_z_bins:
-                weights[z_bin, mc_bin] += 1 / self.prior.prob(mc=mc, z=z)
+            weights[z_bin, mc_bin] += 1 / self.prior.prob(mc=mc, z=z)
 
         weights /= len(self.posterior_samples)
 
