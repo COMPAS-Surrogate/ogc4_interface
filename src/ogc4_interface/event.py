@@ -1,14 +1,14 @@
 import numpy as np
-import pandas as pd
+import matplotlib.pyplot as plt
 
-from .summary import Summary
 from .utils import BASE_URL
 from .cacher import Cacher
 from requests import HTTPError
 from .logger import logger
+from .ogc_prior import Prior
+from .plotting import plot_samples, plot_weights
 
 import h5py
-
 
 POSTERIOR_URL = BASE_URL + "/posterior/{}-PYCBC-POSTERIOR-IMRPhenomXPHM.hdf"
 INI_URL = BASE_URL + "/inference_configuration/inference-{}.ini"
@@ -18,35 +18,25 @@ class Event:
     def __init__(self, name: str):
         self.name = name
 
-    def prior(self, ):
-
-    def _get_mcz_prior_from_ini(self):
-        config = WorkflowConfigParser(configFiles=[self.ini_fn])
-        all_sections = config.sections()
-        to_keep = ['prior-srcmchirp', 'prior-comoving_volume', 'waveform_transforms-redshift']
-        to_remove = list(set(all_sections) - set(to_keep))
-        for s in to_remove:
-            config.remove_section(s)
-        config.add_section('variable_params')
-        config.set('variable_params', 'srcmchirp', '')
-        config.set('variable_params', 'comoving_volume', '')
-
-        prior = prior_from_config(config)
-        return prior
+    @property
+    def prior(self):
+        if not hasattr(self, "_prior"):
+            self._prior = Prior(self.ini_fn)
+        return self._prior
 
     @property
-    def posterior(self):
-        if not hasattr(self, "_posterior"):
-            self._posterior = self._load_mcz_from_hdf()
-        return self._posterior
+    def posterior_samples(self):
+        if not hasattr(self, "_posterior_samples"):
+            self._posterior_samples = self._load_mcz_from_hdf()
+        return self._posterior_samples
 
     def _load_mcz_from_hdf(self) -> np.ndarray:
+        """Returns [[mchirp, z], ...] Shape: (n_samples, 2) from the posterior file"""
         with h5py.File(self.posterior_fn, 'r') as fp:
             samples = fp['samples']
             z = samples['redshift'][()]
             mchirp = samples['srcmchirp'][()]
-
-            return np.ndarray([mchirp, z])
+            return np.array([mchirp, z]).T
 
     def download_data(self):
         try:
@@ -65,14 +55,48 @@ class Event:
         return Cacher.get(INI_URL.format(self.name))
 
 
-def read_priors(ini: str, n_samples: int = 5000):
+    def plot(self, axes=None, nbins=30):
+        if axes is None:
+            fig, axes = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
 
-    samples = prior.rvs(n_samples)
-    z = redshift_from_comoving_volume(samples.comoving_volume)
-    return pd.DataFrame(dict(
-        srcmchirp=samples.srcmchirp,
-        redshift=z,
-        comoving_volume=samples.comoving_volume
-    ))
+        self.prior.plot_prob(ax=axes[0], grid_size=nbins)
+        plot_samples(self.posterior_samples, bounds=self.prior.bounds, ax=axes[1], nbins=nbins)
+        axes[0].set_title("Prior")
+        axes[1].set_title("Posterior")
+        fig = axes[0].get_figure()
+        fig.suptitle(self.name)
+        return axes
+
+    def plot_weights(self, mc_bins, z_bins, axes=None):
+        if axes is None:
+            fig, axes = plt.subplots(1, 3,  figsize=(15, 6))
+        self.plot(axes[:2])
+        weights = self.get_weights(mc_bins, z_bins)
+        plot_weights(weights, mc_bins, z_bins, ax=axes[2])
+        axes[2].set_title("Weights")
+        return axes
 
 
+    def get_weights(self, mc_bins:np.array, z_bins:np.array)->np.ndarray:
+        """
+        Returns the weights for the mcz_grid for the event.
+
+        Args:
+            mc_bins (np.array): The chirp mass bins.
+            z_bins (np.array): The redshift bins.
+
+        Returns:
+            np.ndarray: The weights for the mcz_grid (n_z_bins, n_mc_bins)
+        """
+        n_z_bins, n_mc_bins = len(z_bins), len(mc_bins)
+        weights = np.zeros((n_z_bins, n_mc_bins))
+
+        for mc, z in self.posterior_samples:
+            mc_bin = np.argmin(np.abs(mc_bins - mc))
+            z_bin = np.argmin(np.abs(z_bins - z))
+            if mc_bin < n_mc_bins and z_bin < n_z_bins:
+                weights[z_bin, mc_bin] += 1 / self.prior.prob(mc=mc, z=z)
+
+        weights /= len(self.posterior_samples)
+
+        return weights

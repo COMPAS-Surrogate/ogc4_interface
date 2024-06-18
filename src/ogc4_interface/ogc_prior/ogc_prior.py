@@ -1,15 +1,15 @@
 import numpy as np
 from pycbc.distributions.utils import prior_from_config
-from pycbc.inference import models, io
 from pycbc.workflow import WorkflowConfigParser
 
 from pycbc.distributions import JointDistribution
-import matplotlib.pyplot as plt
-import seaborn as sns
-from .cosmology import redshift_from_comoving_volume, redshift_to_comoving_volume, get_cosmology
-from .dvc_dz import dVcDz
+from .cosmology import get_cosmology, dVcdz, z2vc, vc2z
+from ..plotting import plot_samples, plot_prob
 
-from matplotlib.colors import LogNorm
+
+Mc = "srcmchirp"
+Z = "z"
+VC = "comoving_volume"
 
 class Prior:
     def __init__(self, ini, detailed=True, cosmology=None):
@@ -18,7 +18,6 @@ class Prior:
         if cosmology is None:
             cosmology = get_cosmology()
         self.cosmology = cosmology
-        self._dvc_dz = dVcDz(cosmology=cosmology)
 
     def sample(self, n: int) -> np.ndarray:
         """
@@ -30,7 +29,7 @@ class Prior:
         second column is the redshift.
         """
         samp = self._prior.rvs(n)
-        z = redshift_from_comoving_volume(
+        z = vc2z(
             samp.comoving_volume,
             interp=self.detailed,
             cosmology=self.cosmology
@@ -38,9 +37,12 @@ class Prior:
         return np.array([samp.srcmchirp, z]).T
 
     def log_prob(self, mc, z):
-        vc = redshift_to_comoving_volume(z, cosmology=self.cosmology)
+        vc = z2vc(z, cosmology=self.cosmology)
+        _dvcdz = dVcdz(z, cosmology=self.cosmology)
+        # assert same units
+        assert vc.unit == _dvcdz.unit
         logp_mcv = self._prior(srcmchirp=mc, comoving_volume=vc.value)
-        log_dvdz = np.log(self._dvc_dz(z))
+        log_dvdz = np.log(_dvcdz.value)
         logp_mcz = logp_mcv + log_dvdz
         return logp_mcz
 
@@ -50,72 +52,25 @@ class Prior:
     @property
     def bounds(self):
         if not hasattr(self, '_bounds'):
-            mc_bounds = [
-                self._prior.bounds['srcmchirp'].min,
-                self._prior.bounds['srcmchirp'].max
-            ]
-            vc_bounds = [
-                self._prior.bounds['comoving_volume'].min,
-                self._prior.bounds['comoving_volume'].max
-            ]
             kwgs = dict(interp=self.detailed, cosmology=self.cosmology)
-            z_bounds = [
-                redshift_from_comoving_volume(vc_bounds[0], **kwgs),
-                redshift_from_comoving_volume(vc_bounds[1], **kwgs)
-            ]
             self._bounds = {
-                'srcmchirp': mc_bounds,
-                'z': z_bounds
+                Mc: [
+                    self._prior.bounds[Mc].min,
+                    self._prior.bounds[Mc].max
+                ],
+                Z: [
+                    vc2z(self._prior.bounds[VC].min, **kwgs),
+                    vc2z(self._prior.bounds[VC].max, **kwgs)
+                ]
             }
         return self._bounds
 
     def plot_samples(self, n, ax=None):
         samples = self.sample(n)
-        if ax is None:
-            fig, ax = plt.subplots()
-        mc, z = samples[:, 0], samples[:, 1]
-        sns.histplot(x=z, y=mc, ax=ax)
-        ax.set_xlabel(r'$z$')
-        ax.set_ylabel(r'$\mathcal{M}_{\rm{src}}$')
-        ax.set_xlim(self.bounds['z'])
-        ax.set_ylim(self.bounds['srcmchirp'])
+        return plot_samples(samples, self.bounds, ax=ax)
 
-        # add colorbar above the plot
-        cbar = plt.colorbar(ax.collections[0], ax=ax, orientation='horizontal')
-        cbar.set_label('Counts')
-
-        return ax
-
-    def plot_prob(self, grid_size=30, ax=None, log_prob=False):
-        if ax is None:
-            fig, ax = plt.subplots()
-        mc_lin = np.linspace(*self.bounds['srcmchirp'], grid_size)
-        z_lin = np.linspace(*self.bounds['z'], grid_size)
-        mc_grid, z_grid = np.meshgrid(mc_lin, z_lin)
-        if log_prob:
-            f, f_name = self.log_prob, 'log(prob)'
-        else:
-            f, f_name = self.prob, 'prob'
-
-        prob = np.array([f(mc, z) for mc, z in zip(mc_grid.ravel(), z_grid.ravel())])
-        prob = prob.reshape(mc_grid.shape)
-
-        # imshow the log(prob) values (x = z, y = mc)
-        cmp = ax.pcolor(
-            z_grid, mc_grid, prob,
-            edgecolors='white', cmap='Blues', linewidths=0.1
-        )
-
-        ax.set_xlabel(r'$z$')
-        ax.set_ylabel(r'$\mathcal{M}_{\rm{src}}$')
-        ax.set_xlim(self.bounds['z'])
-        ax.set_ylim(self.bounds['srcmchirp'])
-
-        # add colorbar above the axes
-        fig = ax.get_figure()
-        cbar = fig.colorbar(cmp, ax=ax, orientation='horizontal')
-        cbar.set_label(f_name)
-        return ax
+    def plot_prob(self, ax=None, grid_size=30):
+        return plot_prob(self.prob, self.bounds, grid_size=grid_size, ax=ax)
 
 
 def _read_prior_from_ini(ini_fn: str) -> JointDistribution:
@@ -126,7 +81,7 @@ def _read_prior_from_ini(ini_fn: str) -> JointDistribution:
     for s in to_remove:
         config.remove_section(s)
     config.add_section('variable_params')
-    config.set('variable_params', 'srcmchirp', '')
+    config.set('variable_params', Mc, '')
     config.set('variable_params', 'comoving_volume', '')
 
     prior = prior_from_config(config)

@@ -3,7 +3,7 @@ import os.path
 from .cacher import Cacher
 import pandas as pd
 from tqdm.auto import tqdm
-
+from typing import List
 
 from .logger import logger
 from .utils import BASE_URL
@@ -67,3 +67,6 @@ class Summary():
 
     def __len__(self) -> int:
         return 0 if self._data is None else len(self._data)
+
+    def get_pastro_threholded_event_names(self, pastro_threshold)->List[str]:
+        return self._data[self._data['Pastro'] >= pastro_threshold]['Name'].values
