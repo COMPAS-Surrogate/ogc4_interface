@@ -30,8 +30,11 @@ class PopulationMcZ:
             (len(self.event_names),  len(self.z_bins), len(self.mc_bins) )
         )
         for i, name in enumerate(tqdm(self.event_names, desc="Building weights matrix")):
-            e = Event(name)
-            weights[i, :, :] = e.get_weights(self.mc_bins, self.z_bins)
+            try:
+                e = Event(name)
+                weights[i, :, :] = e.get_weights(self.mc_bins, self.z_bins)
+            except Exception as e:
+                logger.warning(f"Failed to get weights for {name}: {e}")
         np.save(self.weights_fname, weights)
 
     @property
@@ -49,21 +52,30 @@ class PopulationMcZ:
             if not os.path.exists(self.weights_fname):
                 self._build_weights_matrix()
             self._weights = np.load(self.weights_fname)
+
+        # drop any slice with weights that sum to < 1e-5 (THESE ARE EMPTY SLICES)
+        weights_sum = np.sum(self._weights, axis=(1, 2))
+        mask = weights_sum > 1e-5
+        self._weights = self._weights[mask]
         return self._weights
 
     @property
     def n_events(self):
-        return len(self.event_names)
+        n_events, _, _ = self.weights.shape
+        return n_events
 
     def __repr__(self):
         return f"OGC4_McZ(n={self.n_events}, bins=({len(self.mc_bins)}, {len(self.z_bins)}), pastro={self.pastro_threshold})"
 
     def plot(self):
         weights = self.weights.copy()
-        # compress the weights to 2D by summing over the z axis
-        weights = weights.sum(axis=2)
+        # compress the weights to 2D by summing over the 0th axis
+        for i in range(len(weights)): # normlise each event
+            weights[i] = weights[i] / np.sum(weights[i])
+        weights = np.nansum(weights, axis=0)
+        assert weights.shape == (len(self.z_bins), len(self.mc_bins))
         ax = plot_weights(weights, self.mc_bins, self.z_bins)
         fig = ax.get_figure()
-        fig.suptitle(self.label())
+        fig.suptitle(f"OGC4 Population normalised weights (n={self.n_events})")
         return ax
 

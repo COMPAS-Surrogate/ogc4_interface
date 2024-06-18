@@ -8,6 +8,7 @@ from .logger import logger
 from .ogc_prior import Prior
 from .plotting import plot_samples, plot_weights
 
+from tqdm.auto import tqdm
 import h5py
 
 POSTERIOR_URL = BASE_URL + "/posterior/{}-PYCBC-POSTERIOR-IMRPhenomXPHM.hdf"
@@ -91,7 +92,7 @@ class Event:
         n_z_bins, n_mc_bins = len(z_bins), len(mc_bins)
         weights = np.zeros((n_z_bins, n_mc_bins))
 
-        for mc, z in self.posterior_samples:
+        for mc, z in tqdm(self.posterior_samples, desc=f"Weights[{self.name}]"):
             mc_bin = np.argmin(np.abs(mc_bins - mc))
             z_bin = np.argmin(np.abs(z_bins - z))
             if mc_bin < n_mc_bins and z_bin < n_z_bins:
