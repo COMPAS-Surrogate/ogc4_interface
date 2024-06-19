@@ -1,10 +1,11 @@
-import matplotlib.pyplot as plt
-from ogc4_interface.ogc_prior.cosmology import dVcdz, get_cosmology, z2vc
-from ogc4_interface.cacher import Cacher
 import os
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import CubicSpline
+
+from ogc4_interface.cacher import Cacher
+from ogc4_interface.ogc_prior.cosmology import dVcdz, get_cosmology, z2vc
 
 
 def test_dvdz(tmpdir):
@@ -21,7 +22,7 @@ def test_dvdz(tmpdir):
     ax[0].set_xlabel("Error")
 
     cosmology = dvc_dz.cosmology
-    inv_d3 = cosmology.hubble_distance ** -3
+    inv_d3 = cosmology.hubble_distance**-3
     ax[1].plot(zs, analytical_dvdz * inv_d3)
     ax[1].plot(zs, pred_dvdz * inv_d3)
     ax[1].set_xlabel("z")

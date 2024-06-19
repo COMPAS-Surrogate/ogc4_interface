@@ -1,15 +1,14 @@
-import numpy as np
+import h5py
 import matplotlib.pyplot as plt
-
-from .utils import BASE_URL
-from .cacher import Cacher
+import numpy as np
 from requests import HTTPError
+from tqdm.auto import tqdm
+
+from .cacher import Cacher
 from .logger import logger
 from .ogc_prior import Prior
 from .plotting import plot_samples, plot_weights
-
-from tqdm.auto import tqdm
-import h5py
+from .utils import BASE_URL
 
 POSTERIOR_URL = BASE_URL + "/posterior/{}-PYCBC-POSTERIOR-IMRPhenomXPHM.hdf"
 INI_URL = BASE_URL + "/inference_configuration/inference-{}.ini"
@@ -33,10 +32,10 @@ class Event:
 
     def _load_mcz_from_hdf(self) -> np.ndarray:
         """Returns [[mchirp, z], ...] Shape: (n_samples, 2) from the posterior file"""
-        with h5py.File(self.posterior_fn, 'r') as fp:
-            samples = fp['samples']
-            z = samples['redshift'][()]
-            mchirp = samples['srcmchirp'][()]
+        with h5py.File(self.posterior_fn, "r") as fp:
+            samples = fp["samples"]
+            z = samples["redshift"][()]
+            mchirp = samples["srcmchirp"][()]
             return np.array([mchirp, z]).T
 
     def download_data(self):
@@ -45,7 +44,9 @@ class Event:
             logger.debug(f"Init {self.ini_fn}")
 
         except HTTPError:
-            logger.error(f"Skipping download for {self.name}... Cant find files to download!")
+            logger.error(
+                f"Skipping download for {self.name}... Cant find files to download!"
+            )
 
     @property
     def posterior_fn(self) -> str:
@@ -55,13 +56,17 @@ class Event:
     def ini_fn(self) -> str:
         return Cacher.get(INI_URL.format(self.name))
 
-
     def plot(self, axes=None, nbins=30):
         if axes is None:
             fig, axes = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
 
         self.prior.plot_prob(ax=axes[0], grid_size=nbins)
-        plot_samples(self.posterior_samples, bounds=self.prior.bounds, ax=axes[1], nbins=nbins)
+        plot_samples(
+            self.posterior_samples,
+            bounds=self.prior.bounds,
+            ax=axes[1],
+            nbins=nbins,
+        )
         axes[0].set_title("Prior")
         axes[1].set_title("Posterior")
         fig = axes[0].get_figure()
@@ -70,15 +75,14 @@ class Event:
 
     def plot_weights(self, mc_bins, z_bins, axes=None):
         if axes is None:
-            fig, axes = plt.subplots(1, 3,  figsize=(15, 6))
+            fig, axes = plt.subplots(1, 3, figsize=(15, 6))
         self.plot(axes[:2])
         weights = self.get_weights(mc_bins, z_bins)
         plot_weights(weights, mc_bins, z_bins, ax=axes[2])
         axes[2].set_title("Weights")
         return axes
 
-
-    def get_weights(self, mc_bins:np.array, z_bins:np.array)->np.ndarray:
+    def get_weights(self, mc_bins: np.array, z_bins: np.array) -> np.ndarray:
         """
         Returns the weights for the mcz_grid for the event.
 
@@ -92,7 +96,9 @@ class Event:
         n_z_bins, n_mc_bins = len(z_bins), len(mc_bins)
         weights = np.zeros((n_z_bins, n_mc_bins))
 
-        for mc, z in tqdm(self.posterior_samples, desc=f"Weights[{self.name}]"):
+        for mc, z in tqdm(
+            self.posterior_samples, desc=f"Weights[{self.name}]"
+        ):
             # check if the mc and z are within the bins
             in_mbin = mc_bins[0] <= mc <= mc_bins[-1]
             in_zbin = z_bins[0] <= z <= z_bins[-1]

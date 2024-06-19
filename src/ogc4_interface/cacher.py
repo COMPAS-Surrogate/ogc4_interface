@@ -22,7 +22,7 @@ class Cacher:
     @property
     def fpath(self) -> str:
         if not hasattr(self, "_fpath"):
-            fname = urlparse(self.url).path.split('/')[-1]
+            fname = urlparse(self.url).path.split("/")[-1]
             self.__fpath = os.path.join(self.cache_dir, fname)
         return self.__fpath
 
@@ -34,17 +34,17 @@ class Cacher:
         with requests.get(self.url, stream=True) as response:
             response.raise_for_status()
             # Get the total file size in bytes
-            total_size = int(response.headers.get('content-length', 0))
+            total_size = int(response.headers.get("content-length", 0))
 
             # Download the file with a progress bar
 
-            with open(self.fpath, 'wb') as file:
+            with open(self.fpath, "wb") as file:
                 for chunk in tqdm(
-                        response.iter_content(chunk_size=8192),
-                        total=total_size // 8192,
-                        unit='KB',
-                        unit_scale=True,
-                        desc=f"Downloading {self.url}"
+                    response.iter_content(chunk_size=8192),
+                    total=total_size // 8192,
+                    unit="KB",
+                    unit_scale=True,
+                    desc=f"Downloading {self.url}",
                 ):
                     file.write(chunk)
 

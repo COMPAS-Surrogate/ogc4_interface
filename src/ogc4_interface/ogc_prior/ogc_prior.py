@@ -1,15 +1,15 @@
 import numpy as np
+from pycbc.distributions import JointDistribution
 from pycbc.distributions.utils import prior_from_config
 from pycbc.workflow import WorkflowConfigParser
 
-from pycbc.distributions import JointDistribution
-from .cosmology import get_cosmology, dVcdz, z2vc, vc2z
-from ..plotting import plot_samples, plot_prob
-
+from ..plotting import plot_prob, plot_samples
+from .cosmology import dVcdz, get_cosmology, vc2z, z2vc
 
 Mc = "srcmchirp"
 Z = "z"
 VC = "comoving_volume"
+
 
 class Prior:
     def __init__(self, ini, detailed=True, cosmology=None):
@@ -32,7 +32,7 @@ class Prior:
         z = vc2z(
             samp.comoving_volume,
             interp=self.detailed,
-            cosmology=self.cosmology
+            cosmology=self.cosmology,
         )
         return np.array([samp.srcmchirp, z]).T
 
@@ -51,17 +51,14 @@ class Prior:
 
     @property
     def bounds(self):
-        if not hasattr(self, '_bounds'):
+        if not hasattr(self, "_bounds"):
             kwgs = dict(interp=self.detailed, cosmology=self.cosmology)
             self._bounds = {
-                Mc: [
-                    self._prior.bounds[Mc].min,
-                    self._prior.bounds[Mc].max
-                ],
+                Mc: [self._prior.bounds[Mc].min, self._prior.bounds[Mc].max],
                 Z: [
                     vc2z(self._prior.bounds[VC].min, **kwgs),
-                    vc2z(self._prior.bounds[VC].max, **kwgs)
-                ]
+                    vc2z(self._prior.bounds[VC].max, **kwgs),
+                ],
             }
         return self._bounds
 
@@ -76,13 +73,17 @@ class Prior:
 def _read_prior_from_ini(ini_fn: str) -> JointDistribution:
     config = WorkflowConfigParser(configFiles=[ini_fn])
     all_sections = config.sections()
-    to_keep = ['prior-srcmchirp', 'prior-comoving_volume', 'waveform_transforms-redshift']
+    to_keep = [
+        "prior-srcmchirp",
+        "prior-comoving_volume",
+        "waveform_transforms-redshift",
+    ]
     to_remove = list(set(all_sections) - set(to_keep))
     for s in to_remove:
         config.remove_section(s)
-    config.add_section('variable_params')
-    config.set('variable_params', Mc, '')
-    config.set('variable_params', 'comoving_volume', '')
+    config.add_section("variable_params")
+    config.set("variable_params", Mc, "")
+    config.set("variable_params", "comoving_volume", "")
 
     prior = prior_from_config(config)
     return prior

@@ -1,5 +1,6 @@
-import pytest
 import os
+
+import pytest
 
 HERE = os.path.dirname(__file__)
 
@@ -13,4 +14,4 @@ def tmpdir():
 
 @pytest.fixture()
 def test_ini():
-    return os.path.join(HERE, 'test_files/inference-GW150914_095045.ini')
+    return os.path.join(HERE, "test_files/inference-GW150914_095045.ini")

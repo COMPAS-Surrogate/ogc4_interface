@@ -1,5 +1,7 @@
-from ogc4_interface.population_mcz import PopulationMcZ
 import numpy as np
+
+from ogc4_interface.population_mcz import PopulationMcZ
+
 
 def test_population(tmpdir):
     p = PopulationMcZ.load()
@@ -8,5 +10,4 @@ def test_population(tmpdir):
     ax.get_figure().savefig(f"{tmpdir}/weights.png")
     # p.plot_individuals(f"{tmpdir}/individuals")
     fig, _ = p.plot_event_mcz_estimates()
-    fig.savefig(f"{tmpdir}/event_mcz_estimates.png", bbox_inches='tight')
-
+    fig.savefig(f"{tmpdir}/event_mcz_estimates.png", bbox_inches="tight")
