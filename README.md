@@ -12,7 +12,14 @@ import numpy as np
 
 mc_bins = np.linspace(3, 40, 100)
 z_bins = np.linspace(0, 1, 100)
-population = PopulationMcZ(pastro_threshold=0.95, mc_bins=mc_bins, z_bins=z_bins)
-population.plot() # plots the Sum(event_weights) in each bin
+population = PopulationMcZ.load()
+population.plot_weights()
 
 ```
+
+## Weights
+![](docs/_static/weights.png)
+
+
+## Events used
+![](docs/_static/event_mcz_estimates.png)

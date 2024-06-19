@@ -109,6 +109,12 @@ class PopulationMcZ:
             mc and z and p for mc, z, p in zip(mc_pass, z_pass, pastro_pass)
         ]
 
+    def filter_events(self, threshold=0.95):
+        pass_fail = self.get_pass_fail(threshold)
+        event_data = self.event_data[pass_fail]
+        weights = self.weights[pass_fail]
+        return PopulationMcZ(self.mc_bins, self.z_bins, event_data, weights)
+
     def plot_event_mcz_estimates(self):
         fig, axes = plot_event_mcz_uncertainty(
             self.event_data, pass_fail=self.get_pass_fail()
