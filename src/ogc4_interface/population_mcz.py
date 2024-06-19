@@ -18,6 +18,8 @@ from .plotting import (
 )
 from .summary import Summary
 
+URL = "https://github.com/COMPAS-Surrogate/ogc4_interface/raw/main/data/ogc4_mcz_weights.hdf5"
+
 
 class PopulationMcZ:
     def __init__(
@@ -36,12 +38,10 @@ class PopulationMcZ:
         self.n_events, self.n_z_bins, self.n_mc_bins = weights.shape
 
     @classmethod
-    def load(cls, fname=None):
-
-        if fname is None:
-            fname = f"{Cacher.cache_dir}/population.hdf5"
-
-        with h5py.File(fname, "r") as f:
+    def load(cls):
+        fpath = Cacher(URL).fpath
+        logger.info(f"Loading OGC4 McZ population from {fpath}")
+        with h5py.File(fpath, "r") as f:
             mc_bins = f["mc_bins"][()]
             z_bins = f["z_bins"][()]
             event_data = pd.DataFrame.from_records(f["event_data"][()])
