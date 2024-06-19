@@ -1,5 +1,7 @@
 import os.path
 
+import numpy as np
+
 from .cacher import Cacher
 import pandas as pd
 from tqdm.auto import tqdm
@@ -82,3 +84,18 @@ class Summary():
 
     def get_mcz_for(self, event_name:str):
         return self._data[self._data['Name'] == event_name][['srcmchirp','redshift']].values[0]
+
+    @property
+    def event_names(self):
+        return self._data['Name'].values
+
+    @property
+    def data_records(self)->np.ndarray:
+        d =  self._data[[
+            'Name',
+            'srcmchirp', 'srcmchirp_plus', 'srcmchirp_minus',
+            'redshift', 'redshift_plus', 'redshift_minus',
+            'Pastro'
+             ]]
+        d['Name'] = d['Name'].astype('S15')
+        return d.to_records(index=False)

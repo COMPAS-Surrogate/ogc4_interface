@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib.colors import LogNorm, PowerNorm
+
+from matplotlib.colors import LogNorm, PowerNorm, TwoSlopeNorm
 from matplotlib.colors import (to_rgba, ListedColormap)
 from scipy.interpolate import interp1d
 from colormath.color_conversions import convert_color
@@ -40,6 +40,15 @@ def get_cylon():
     cmap = np.vstack(colors)
     return ListedColormap(cmap, name='myColorMap', N=cmap.shape[0])
 
+
+def get_colors_from_cmap(vals, cmap='Blues', min_val=None, mid_val=None, max_val=None):
+
+    if min_val is not None:
+        norm = TwoSlopeNorm(vmin=min_val, vcenter=mid_val, vmax=max_val)
+        vals = norm(vals)
+    cmap = plt.get_cmap(cmap)
+    color = cmap(vals)
+    return color
 
 def get_top_color_of_cmap(cmap):
     return cmap(np.linspace(0, 1, 256))[-1]

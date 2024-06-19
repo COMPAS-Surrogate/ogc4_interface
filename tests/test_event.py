@@ -17,3 +17,6 @@ def test_event(tmpdir):
     axes = e.plot_weights(mc_bins, z_bins)
     fig = axes[0].get_figure()
     fig.savefig(f"{tmpdir}/gw190521_event.png")
+
+
+

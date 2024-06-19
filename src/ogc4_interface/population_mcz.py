@@ -2,91 +2,69 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import numpy as np
+import pandas as pd
 from tqdm.auto import tqdm
 
 from .summary import Summary
 from .logger import logger
 from .event import Event
 from .cacher import Cacher
-from .plotting import plot_weights, CTOP
+from .plotting import plot_weights, CTOP, plot_scatter, add_cntr, plot_event_mcz_uncertainty
 from tqdm.auto import tqdm
 import os
 
-from scipy.ndimage import gaussian_filter
+import h5py
+
+
+
 
 
 class PopulationMcZ:
-    def __init__(self, mc_bins: np.array, z_bins: np.array, pastro_threshold=0.95):
-        self.pastro_threshold = pastro_threshold
+    def __init__(
+            self,
+            mc_bins: np.array,
+            z_bins: np.array,
+            event_data: pd.DataFrame,
+            weights: np.ndarray,
+    ):
         self.mc_bins = mc_bins
         self.z_bins = z_bins
+        self.event_data = event_data
+        self.weights = weights
 
-    @property
-    def event_names(self):
-        if not hasattr(self, "_event_names"):
-            s = Summary.load()
-            self._event_names = s.get_pastro_threholded_event_names(self.pastro_threshold)
-        return self._event_names
+        ##
+        self.n_events, self.n_z_bins, self.n_mc_bins = weights.shape
 
-    def _build_weights_matrix(self):
-        weights = np.zeros(
-            (len(self.event_names),  len(self.z_bins), len(self.mc_bins) )
-        )
-        for i, name in enumerate(tqdm(self.event_names, desc="Building weights matrix")):
-            try:
-                e = Event(name)
-                weights[i, :, :] = e.get_weights(self.mc_bins, self.z_bins)
-            except Exception as e:
-                logger.warning(f"Failed to get weights for {name}: {e}")
-        np.save(self.weights_fname, weights)
 
-    @property
-    def weights_fname(self):
-        return f"{Cacher.cache_dir}/ogc4_weights_{self.label()}.npy"
+    @classmethod
+    def load(cls, fname=None):
 
-    def label(self):
-        mc_label = f"Mc_{len(self.mc_bins)}_{self.mc_bins[0]}_{self.mc_bins[-1]}"
-        z_label = f"z_{len(self.z_bins)}_{self.z_bins[0]}_{self.z_bins[-1]}"
-        return f"{mc_label}_{z_label}_pastro_{self.pastro_threshold}"
+        if fname is None:
+            fname = f"{Cacher.cache_dir}/population.hdf5"
 
-    @property
-    def weights(self):
-        if not hasattr(self, "_weights"):
-            if not os.path.exists(self.weights_fname):
-                self._build_weights_matrix()
-            self._weights = np.load(self.weights_fname)
-
-        # drop any slice with weights that sum to < 1e-5 (THESE ARE EMPTY SLICES)
-        # weights_sum = np.sum(self._weights, axis=(1, 2))
-        # mask = weights_sum > 1e-5
-        # self._weights = self._weights[mask]
-
-        return self._weights
-
-    @property
-    def n_events(self):
-        n_events, _, _ = self.weights.shape
-        return n_events
+        with h5py.File(fname, 'r') as f:
+            mc_bins = f['mc_bins'][()]
+            z_bins = f['z_bins'][()]
+            event_data = pd.DataFrame.from_records(f['event_data'][()])
+            event_data['Name'] = event_data['Name'].astype(str)
+            weights = f['weights'][()]
+        assert all([col in event_data.columns for col in ['Name', 'srcmchirp', 'redshift', 'Pastro']])
+        assert weights.shape == (len(event_data), len(z_bins), len(mc_bins))
+        return cls(mc_bins, z_bins, event_data, weights)
 
     def __repr__(self):
-        return f"OGC4_McZ(n={self.n_events}, bins=({len(self.mc_bins)}, {len(self.z_bins)}), pastro={self.pastro_threshold})"
+        return "OGC4_McZ(n={}, bins=[{}, {}]".format(*self.weights.shape)
 
-    def plot(self):
+    def plot_weights(self):
         weights = self.weights.copy()
         # compress the weights to 2D by summing over the 0th axis
         for i in range(len(weights)): # normlise each event
             weights[i] = weights[i] / np.sum(weights[i])
-
-
-        s = Summary.load()
-        ax = s.plot(pastro_threshold=self.pastro_threshold, color=CTOP)
+        ax = plot_scatter(self.event_data[['redshift', 'srcmchirp']].values)
         ax = plot_weights(np.nansum(weights, axis=0), self.mc_bins, self.z_bins,ax=ax)
-
         Z, MC = np.meshgrid(self.z_bins, self.mc_bins)
         for i in range(len(weights)):
-            ax.contour(Z, MC, gaussian_filter(weights[i], 2).T, levels=1, colors=CTOP, linewidths=[0,2], alpha=0.1)
-
-
+            add_cntr(ax, Z, MC, weights[i])
         fig = ax.get_figure()
         fig.suptitle(f"OGC4 Population normalised weights (n={self.n_events})")
         return ax
@@ -95,15 +73,34 @@ class PopulationMcZ:
     def plot_individuals(self, outdir):
         os.makedirs(outdir, exist_ok=True)
         weights = self.weights.copy()
-        s = Summary.load()
-        for i, name in tqdm(enumerate(self.event_names)):
-            w = weights[i]
-            w = w / np.sum(w)
-            # get mc and z values for this event from summary
-            mc, z = s.get_mcz_for(name)
+        names = self.event_data['Name'].values
+        Z, MC = np.meshgrid(self.z_bins, self.mc_bins)
+        for i, name in tqdm(enumerate(names), total=len(names)):
+            w = weights[i] / np.sum(weights[i])
+            mc, z = self.event_data.loc[self.event_data['Name'] == name, ['srcmchirp', 'redshift']].values[0]
             ax = plot_weights(w, self.mc_bins, self.z_bins)
+
             ax.set_title(f"{name} (mc={mc:.2f}M, z={z:.2f})")
-            ax.scatter(z, mc, color='k', s=1)
+            ax.scatter(z, mc, color=CTOP, s=1)
+            add_cntr(ax, Z, MC, w)
             plt.savefig(f"{outdir}/weights_{name}.png")
+
+
+    def get_pass_fail(self, threshold=0.95):
+        mc_rng = [self.mc_bins[0], self.mc_bins[-1]]
+        z_rng = [self.z_bins[0], self.z_bins[-1]]
+        mc_pass = [mc_rng[0] <= mc <= mc_rng[1] for mc in self.event_data['srcmchirp']]
+        z_pass = [z_rng[0] <= z <= z_rng[1] for z in self.event_data['redshift']]
+        pastro_pass = [True if _pi >= threshold else False for _pi in self.event_data['Pastro']]
+        return [mc and z and p for mc, z, p in zip(mc_pass, z_pass, pastro_pass)]
+
+    def plot_event_mcz_estimates(self):
+        fig, axes = plot_event_mcz_uncertainty(self.event_data, pass_fail=self.get_pass_fail())
+        axes[1].axvspan(0, self.mc_bins[0], color='k', alpha=0.1)
+        axes[1].axvspan(self.mc_bins[-1], 100, color='k', alpha=0.1)
+        return fig, axes
+
+
+
 
 
