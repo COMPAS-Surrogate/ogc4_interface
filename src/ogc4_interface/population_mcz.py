@@ -8,10 +8,11 @@ from .summary import Summary
 from .logger import logger
 from .event import Event
 from .cacher import Cacher
-from .plotting import plot_weights
-
+from .plotting import plot_weights, CTOP
 from tqdm.auto import tqdm
 import os
+
+from scipy.ndimage import gaussian_filter
 
 
 class PopulationMcZ:
@@ -56,9 +57,10 @@ class PopulationMcZ:
             self._weights = np.load(self.weights_fname)
 
         # drop any slice with weights that sum to < 1e-5 (THESE ARE EMPTY SLICES)
-        weights_sum = np.sum(self._weights, axis=(1, 2))
-        mask = weights_sum > 1e-5
-        self._weights = self._weights[mask]
+        # weights_sum = np.sum(self._weights, axis=(1, 2))
+        # mask = weights_sum > 1e-5
+        # self._weights = self._weights[mask]
+
         return self._weights
 
     @property
@@ -74,11 +76,17 @@ class PopulationMcZ:
         # compress the weights to 2D by summing over the 0th axis
         for i in range(len(weights)): # normlise each event
             weights[i] = weights[i] / np.sum(weights[i])
-        weights = np.nansum(weights, axis=0)
-        assert weights.shape == (len(self.z_bins), len(self.mc_bins))
+
+
         s = Summary.load()
-        ax = s.plot(pastro_threshold=self.pastro_threshold)
-        ax = plot_weights(weights, self.mc_bins, self.z_bins,ax=ax)
+        ax = s.plot(pastro_threshold=self.pastro_threshold, color=CTOP)
+        ax = plot_weights(np.nansum(weights, axis=0), self.mc_bins, self.z_bins,ax=ax)
+
+        Z, MC = np.meshgrid(self.z_bins, self.mc_bins)
+        for i in range(len(weights)):
+            ax.contour(Z, MC, gaussian_filter(weights[i], 2).T, levels=1, colors=CTOP, linewidths=[0,2], alpha=0.1)
+
+
         fig = ax.get_figure()
         fig.suptitle(f"OGC4 Population normalised weights (n={self.n_events})")
         return ax

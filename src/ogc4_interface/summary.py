@@ -75,9 +75,9 @@ class Summary():
     def get_filtered_data(self, pastro_threshold:float):
         return self._data[self._data['Pastro'] >= pastro_threshold]
 
-    def plot(self, ax=None, pastro_threshold=0.95, bounds=None):
+    def plot(self, ax=None, pastro_threshold=0.95, bounds=None, color='k'):
         d = self.get_filtered_data(pastro_threshold)[['redshift','srcmchirp']].values
-        ax = plot_scatter(d, ax=ax, bounds=bounds)
+        ax = plot_scatter(d, ax=ax, bounds=bounds, color=color)
         return ax
 
     def get_mcz_for(self, event_name:str):

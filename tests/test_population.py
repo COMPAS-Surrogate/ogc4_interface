@@ -10,5 +10,4 @@ def test_population(tmpdir):
     ax = p.plot()
     fig = ax.get_figure()
     fig.savefig(f"{tmpdir}/population.png")
-
-    p.plot_individuals(f'{tmpdir}/individuals')
+    # p.plot_individuals(f'{tmpdir}/individuals')

@@ -1,11 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LogNorm, PowerNorm
+from matplotlib.colors import (to_rgba, ListedColormap)
+from scipy.interpolate import interp1d
+from colormath.color_conversions import convert_color
+from colormath.color_objects import LabColor, sRGBColor
+from .cmap_generator import CMAP, CTOP
 
 Mc = 'srcmchirp'
 Z = 'z'
-CMAP = "Blues"
+
+
 
 def plot_samples(samples, bounds, nbins=30, ax=None):
     if ax is None:
@@ -67,10 +73,12 @@ def _get_norm(x):
     log_x = log_x[np.isfinite(log_x)]
     if len(log_x) == 0:
         return None
-    return LogNorm(vmin=np.exp(log_x.min()), vmax=x.max())
+    vmin, vmax = np.exp(log_x.min()), x.max()
+    # return LogNorm(vmin=np.exp(log_x.min()), vmax=x.max())
+    return PowerNorm(gamma=0.3, vmin=vmin/10, vmax=vmax*3)
 
 
-def plot_weights(weights:np.ndarray, mc_bins, z_bins, ax=None):
+def plot_weights(weights:np.ndarray, mc_bins, z_bins, ax=None, contour=True):
     if ax is None:
         fig, ax = plt.subplots()
     _fmt_ax(ax, {Mc:[min(mc_bins), max(mc_bins)], Z:[min(z_bins), max(z_bins)]})
@@ -78,16 +86,20 @@ def plot_weights(weights:np.ndarray, mc_bins, z_bins, ax=None):
         z_bins, mc_bins, weights.T, cmap=CMAP,
         norm=_get_norm(weights)
     )
+
+    if contour:
+        Zb, MCb = np.meshgrid(z_bins, mc_bins)
+        ax.contour(Zb, MCb, weights.T, levels=1, colors='tab:orange', linewidths=[0, 2], alpha=0.1)
     # add colorbar above the axes
     fig = ax.get_figure()
     cbar = fig.colorbar(cmp, ax=ax, orientation='horizontal')
     cbar.set_label(r"$w_{z,\mathcal{M}}$")
     return ax
 
-def plot_scatter(samples, bounds=None, ax=None):
+def plot_scatter(samples, bounds=None, ax=None, color=CTOP):
     if ax is None:
         fig, ax = plt.subplots()
     _fmt_ax(ax, bounds)
     z, mc = samples[:, 0], samples[:, 1]
-    ax.plot(z, mc, 'k.')
+    ax.plot(z, mc, marker='.', c=color, lw=0)
     return ax
