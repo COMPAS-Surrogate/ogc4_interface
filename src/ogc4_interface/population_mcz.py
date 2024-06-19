@@ -45,7 +45,7 @@ class PopulationMcZ:
             mc_bins = f["mc_bins"][()]
             z_bins = f["z_bins"][()]
             event_data = pd.DataFrame.from_records(f["event_data"][()])
-            event_data["Name"] = event_data["Name"].astype(str)
+            event_data["Name"] = event_data["Name"].str.decode("utf-8")
             weights = f["weights"][()]
         assert all(
             [
