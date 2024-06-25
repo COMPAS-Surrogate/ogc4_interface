@@ -14,6 +14,9 @@ from .cmap_generator import CMAP, CTOP, get_colors_from_cmap
 Mc = "srcmchirp"
 Z = "z"
 
+MC_LATEX = r"$\mathcal{M}_{\rm src}\ [M_{\odot}]$"
+Z_LATEX = r"$z$"
+
 
 def plot_samples(samples, bounds, nbins=30, ax=None):
     if ax is None:
@@ -36,8 +39,8 @@ def plot_samples(samples, bounds, nbins=30, ax=None):
 
 
 def _fmt_ax(ax, bounds=None):
-    ax.set_xlabel(r"$z$")
-    ax.set_ylabel(r"$\mathcal{M}_{\rm{src}}$")
+    ax.set_xlabel(Z_LATEX)
+    ax.set_ylabel(MC_LATEX)
     if bounds:
         ax.set_xlim(bounds[Z])
         ax.set_ylim(bounds[Mc])
@@ -111,8 +114,8 @@ def plot_weights(weights: np.ndarray, mc_bins, z_bins, ax=None, contour=True):
         )
     # add colorbar above the axes
     fig = ax.get_figure()
-    cbar = fig.colorbar(cmp, ax=ax, orientation="horizontal")
-    cbar.set_label(r"$w_{z,\mathcal{M}}$")
+    cbar = fig.colorbar(cmp, ax=ax, orientation="vertical")
+    cbar.set_label(r"$w_{z,\mathcal{M}_{\rm src}}$")
     return ax
 
 
@@ -121,7 +124,7 @@ def plot_scatter(samples, bounds=None, ax=None, color=CTOP):
         fig, ax = plt.subplots()
     _fmt_ax(ax, bounds)
     z, mc = samples[:, 0], samples[:, 1]
-    ax.plot(z, mc, marker=".", c=color, lw=0)
+    ax.plot(z, mc, marker=".", c=color, lw=0, ms=2)
     return ax
 
 
@@ -138,24 +141,27 @@ def add_cntr(ax, X, Y, Z, color=CTOP):
 
 
 def plot_event_mcz_uncertainty(data: pd.DataFrame, pass_fail=None):
+    pastro = data["Pastro"]
+    # replace values below 0 --> 0
+    pastro = pastro.values
+    pastro[pastro < 0] = 0
+    if pass_fail is None:
+        pass_fail = [True if _pi >= 0.95 else False for _pi in pastro]
+    data["pass"] = pass_fail
     n_events = len(data)
     # sort data by name
     data = data.sort_values("Name", ascending=False)
-    z, zup, zlow = (
-        data["redshift"],
-        data["redshift_plus"],
-        data["redshift_minus"],
-    )
-    mc, mcup, mclow = (
-        data["srcmchirp"],
-        data["srcmchirp_plus"],
-        data["srcmchirp_minus"],
-    )
-    names = data["Name"]
+    data = data.reset_index(drop=True)
+    data = data[
+        "Name redshift redshift_plus redshift_minus srcmchirp srcmchirp_plus srcmchirp_minus Pastro pass".split()
+    ].values
+
+    (names, z, zup, zlow, mc, mcup, mclow, pastro, pass_) = data.T
+    y = np.arange(len(names))
 
     fig, axes = plt.subplots(1, 2, sharey=True, figsize=(4.5, 0.25 * n_events))
     # plot data in reverse order to match the order of the data
-    y = range(n_events)
+
     kwgs = dict(capsize=4, fmt=",", lw=2, elinewidth=2, markeredgewidth=2)
 
     # names along the y-axis
@@ -166,16 +172,15 @@ def plot_event_mcz_uncertainty(data: pd.DataFrame, pass_fail=None):
     ax_past = axes[1].twinx()
     ax_past.yaxis.tick_right()
     ax_past.set_yticks(y)
+    ax_past.set_ylim(*axes[0].get_ylim())
+
     # format to {0.00} (2dp)
-    pastro = data["Pastro"]
-    # replace values below 0 --> 0
-    pastro[pastro < 0] = 0
+
     ax_past.set_yticklabels([f"{c:.2f}" for c in pastro])
     # set tick width to 0
     ax_past.tick_params(axis="y", length=0)
-    if pass_fail is None:
-        pass_fail = [True if _pi >= 0.95 else False for _pi in pastro]
-    colors = ["tab:green" if p else "tab:red" for p in pass_fail]
+
+    colors = ["tab:green" if p else "tab:red" for p in pass_]
 
     zerr = np.array([zlow, zup]).T
     mcerr = np.array([mclow, mcup]).T
@@ -189,8 +194,8 @@ def plot_event_mcz_uncertainty(data: pd.DataFrame, pass_fail=None):
             mc[i], y[i], xerr=mcerr[i].reshape(-1, 1), **kwgs, **clr
         )
 
-    axes[0].set_xlabel(r"$z$")
-    axes[1].set_xlabel(r"$\mathcal{M}_{\rm src}\ [M_{\odot}]$")
+    axes[0].set_xlabel(Z_LATEX)
+    axes[1].set_xlabel(MC_LATEX)
 
     # remove whitespace between subplots
     axes[0].set_ylim(-0.5, n_events - 0.5)
@@ -231,6 +236,11 @@ def plot_event_mcz_uncertainty(data: pd.DataFrame, pass_fail=None):
         fontsize=12,
         fontweight="bold",
     )
+    # # mirror xtick numbers on the top
+    # for ax in axes:
+    #     ax.xaxis.set_ticks_position("both")
+    #     ax.xaxis.set_tick_params(which="both", top=True, bottom=True, labeltop=True, labelbottom=True)
+    #
 
     return fig, axes
 

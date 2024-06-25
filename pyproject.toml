@@ -31,6 +31,11 @@ classifiers = [
 ]
 dependencies = [
     "pycbc",
+    "colorlog",
+    "tqdm",
+    "h5py",
+    "matplotlib",
+    "pandas",
 ]
 
 [project.optional-dependencies]

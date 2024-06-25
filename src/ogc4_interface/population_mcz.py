@@ -7,7 +7,6 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from .cacher import Cacher
-from .event import Event
 from .logger import logger
 from .plotting import (
     CTOP,
@@ -16,7 +15,6 @@ from .plotting import (
     plot_scatter,
     plot_weights,
 )
-from .summary import Summary
 
 URL = "https://github.com/COMPAS-Surrogate/ogc4_interface/raw/main/data/ogc4_mcz_weights.hdf5"
 
@@ -32,13 +30,13 @@ class PopulationMcZ:
         self.mc_bins = mc_bins
         self.z_bins = z_bins
         self.event_data = event_data
-        self.weights = weights
+        self.weights: np.ndarray = weights
 
         ##
         self.n_events, self.n_z_bins, self.n_mc_bins = weights.shape
 
     @classmethod
-    def load(cls):
+    def load(cls, pastro_threshold=None):
         fpath = Cacher(URL).fpath
         logger.info(f"Loading OGC4 McZ population from {fpath}")
         with h5py.File(fpath, "r") as f:
@@ -54,12 +52,15 @@ class PopulationMcZ:
             ]
         )
         assert weights.shape == (len(event_data), len(z_bins), len(mc_bins))
-        return cls(mc_bins, z_bins, event_data, weights)
+        res = cls(mc_bins, z_bins, event_data, weights)
+        if pastro_threshold is not None:
+            return res.filter_events(pastro_threshold)
+        return res
 
     def __repr__(self):
         return "OGC4_McZ(n={}, bins=[{}, {}]".format(*self.weights.shape)
 
-    def plot_weights(self):
+    def plot_weights(self, title=False):
         weights = self.weights.copy()
         # compress the weights to 2D by summing over the 0th axis
         for i in range(len(weights)):  # normlise each event
@@ -72,7 +73,10 @@ class PopulationMcZ:
         for i in range(len(weights)):
             add_cntr(ax, Z, MC, weights[i])
         fig = ax.get_figure()
-        fig.suptitle(f"OGC4 Population normalised weights (n={self.n_events})")
+        if title:
+            fig.suptitle(
+                f"OGC4 Population normalised weights (n={self.n_events})"
+            )
         return ax
 
     def plot_individuals(self, outdir):
