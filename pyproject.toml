@@ -36,6 +36,7 @@ dependencies = [
     "h5py",
     "matplotlib",
     "pandas",
+    "seaborn"
 ]
 
 [project.optional-dependencies]
