@@ -14,9 +14,9 @@ population.filter_events(threshold=0.95)
 population.plot_weights()
 ```
 
+## Events
+![](docs/_static/event_mcz_estimates.jpeg)
+
+
 ## Weights
-![](docs/_static/weights.pdf)
-
-
-## Events used
-![](docs/_static/event_mcz_estimates.pdf)
+![](docs/_static/weights.jpeg)
