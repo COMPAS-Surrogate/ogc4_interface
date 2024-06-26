@@ -20,5 +20,3 @@ html:
 sphinx:
   extra_extensions:
     - sphinx.ext.autodoc
-  config:
-    html_theme: pydata_sphinx_theme
