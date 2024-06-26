@@ -35,6 +35,8 @@ jobs:
       - name: Build the book
         run: |
           cp README.md docs/
+          ls docs/
+          ls docs/_static/
           jupyter-book build docs
           rm docs/README.md
 
