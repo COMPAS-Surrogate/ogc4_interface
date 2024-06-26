@@ -4,11 +4,10 @@ import numpy as np
 from requests import HTTPError
 from tqdm.auto import tqdm
 
-from .cacher import Cacher
+from .cacher import BASE_URL, Cacher
 from .logger import logger
 from .ogc_prior import Prior
 from .plotting import plot_samples, plot_weights
-from .utils import BASE_URL
 
 POSTERIOR_URL = BASE_URL + "/posterior/{}-PYCBC-POSTERIOR-IMRPhenomXPHM.hdf"
 INI_URL = BASE_URL + "/inference_configuration/inference-{}.ini"

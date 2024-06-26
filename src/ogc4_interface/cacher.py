@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 __all__ = ["Cacher"]
 
-
+BASE_URL = "https://github.com/gwastro/4-ogc/raw/master"
 HERE = os.path.dirname(__file__)
 
 

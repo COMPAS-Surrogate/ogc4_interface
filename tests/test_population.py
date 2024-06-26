@@ -1,5 +1,3 @@
-import numpy as np
-
 from ogc4_interface.population_mcz import PopulationMcZ
 
 

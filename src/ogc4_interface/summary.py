@@ -5,11 +5,10 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
-from .cacher import Cacher
+from .cacher import BASE_URL, Cacher
 from .event import Event
 from .logger import logger
 from .plotting import plot_scatter
-from .utils import BASE_URL
 
 PE_TABLE_URL = f"{BASE_URL}/posterior/PEtable.txt"
 SEARCH_TABLE_URL = f"{BASE_URL}/search/4OGC_top.txt"

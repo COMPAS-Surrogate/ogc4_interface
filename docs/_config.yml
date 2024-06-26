@@ -5,7 +5,7 @@ title: OGC4-Interface
 author: Avi
 
 execute:
-  execute_notebooks: "off"
+  execute_notebooks: "force"
 
 
 repository:
