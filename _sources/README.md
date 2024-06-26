@@ -15,8 +15,8 @@ population.plot_weights()
 ```
 
 ## Weights
-![](docs/_static/weights.png)
+![](docs/_static/weights.pdf)
 
 
 ## Events used
-![](docs/_static/event_mcz_estimates.png)
+![](docs/_static/event_mcz_estimates.pdf)
