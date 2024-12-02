@@ -3,11 +3,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from requests import HTTPError
 from tqdm.auto import tqdm
+from datetime import datetime
 
 from .cacher import BASE_URL, Cacher
 from .logger import logger
 from .ogc_prior import Prior
 from .plotting import plot_samples, plot_weights
+from .observing_run import ObservingRun
 
 POSTERIOR_URL = BASE_URL + "/posterior/{}-PYCBC-POSTERIOR-IMRPhenomXPHM.hdf"
 INI_URL = BASE_URL + "/inference_configuration/inference-{}.ini"
@@ -111,3 +113,20 @@ class Event:
         weights /= len(self.posterior_samples)
 
         return weights
+
+
+    @property
+    def trigger_date(self)->datetime:
+        return self.name_to_date(self.name)
+
+    @property
+    def observing_run(self)->str:
+        return self.name_to_observing_run(self.name)
+
+    @staticmethod
+    def name_to_date(name:str)->datetime:
+        return datetime.strptime(name, "GW%y%m%d_%H%M%S")
+
+    @staticmethod
+    def name_to_observing_run(name:str)->str:
+        return ObservingRun.from_date(Event.name_to_date(name)).name

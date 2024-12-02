@@ -85,7 +85,7 @@ def _get_norm(x):
     log_x = np.log(x)
     log_x = log_x[np.isfinite(log_x)]
     if len(log_x) == 0:
-        return None
+        return LogNorm(vmin=0.1, vmax=1)
     vmin, vmax = np.exp(log_x.min()), x.max()
     # return LogNorm(vmin=np.exp(log_x.min()), vmax=x.max())
     return PowerNorm(gamma=0.3, vmin=vmin / 10, vmax=vmax * 3)
@@ -153,10 +153,10 @@ def plot_event_mcz_uncertainty(data: pd.DataFrame, pass_fail=None):
     data = data.sort_values("Name", ascending=False)
     data = data.reset_index(drop=True)
     data = data[
-        "Name redshift redshift_plus redshift_minus srcmchirp srcmchirp_plus srcmchirp_minus Pastro pass".split()
+        "Name redshift redshift_plus redshift_minus srcmchirp srcmchirp_plus srcmchirp_minus Pastro ObservingRun pass".split()
     ].values
 
-    (names, z, zup, zlow, mc, mcup, mclow, pastro, pass_) = data.T
+    (names, z, zup, zlow, mc, mcup, mclow, pastro, obs_run, pass_) = data.T
     y = np.arange(len(names))
 
     fig, axes = plt.subplots(1, 2, sharey=True, figsize=(4.5, 0.25 * n_events))
@@ -174,9 +174,15 @@ def plot_event_mcz_uncertainty(data: pd.DataFrame, pass_fail=None):
     ax_past.set_yticks(y)
     ax_past.set_ylim(*axes[0].get_ylim())
 
-    # format to {0.00} (2dp)
+    # format to {0.00} (2dp) and color based on pastro > 0.95
+    ax_past.set_yticklabels([f"{p:.2f}" for p in pastro])
+    for i, p in enumerate(pastro):
+        if p < 0.95:
+            ax_past.get_yticklabels()[i].set_color("tab:red")
+    for i, n in enumerate(names):
+        if not pass_[i]:
+            axes[0].get_yticklabels()[i].set_color("tab:red")
 
-    ax_past.set_yticklabels([f"{c:.2f}" for c in pastro])
     # set tick width to 0
     ax_past.tick_params(axis="y", length=0)
 
@@ -241,6 +247,18 @@ def plot_event_mcz_uncertainty(data: pd.DataFrame, pass_fail=None):
     #     ax.xaxis.set_ticks_position("both")
     #     ax.xaxis.set_tick_params(which="both", top=True, bottom=True, labeltop=True, labelbottom=True)
     #
+
+
+    # add a horizontal line everytime the observing run changes and label the observing run
+    for i, run in enumerate(obs_run):
+        if i == 0:
+            continue
+        if obs_run[i] != obs_run[i - 1]:
+            axes[0].axhline(i - 0.5, color="black", lw=1)
+            axes[0].text(
+                0.5, i, run, ha="right", va="center", color="black", fontsize=8
+            )
+            axes[1].axhline(i - 0.5, color="black", lw=1)
 
     return fig, axes
 

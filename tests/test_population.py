@@ -9,6 +9,10 @@ def test_population(tmpdir):
         f"{tmpdir}/event_mcz_estimates.png", bbox_inches="tight", dpi=300
     )
 
-    p = p.filter_events(threshold=0.95)
-    ax = p.plot_weights()
+
+    ax = p.plot_weights(title=True)
+    ax.get_figure().savefig(f"{tmpdir}/weights_orig.png", dpi=300)
+
+    p = p.filter_events(threshold=0.95, observing_runs=["O3a", "O3b"])
+    ax = p.plot_weights(title=True)
     ax.get_figure().savefig(f"{tmpdir}/weights.png", dpi=300)
