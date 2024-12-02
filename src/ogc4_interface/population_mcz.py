@@ -37,7 +37,7 @@ class PopulationMcZ:
         self.n_events, self.n_z_bins, self.n_mc_bins = weights.shape
 
     @classmethod
-    def load(cls, pastro_threshold=None):
+    def load(cls, pastro_threshold=None, observing_runs=['O3a', 'O3b'], filter_valid_mcz=True):
         fpath = Cacher(URL).fpath
         logger.info(f"Loading OGC4 McZ population from {fpath}")
         with h5py.File(fpath, "r") as f:
@@ -56,7 +56,7 @@ class PopulationMcZ:
         assert weights.shape == (len(event_data), len(z_bins), len(mc_bins))
         res = cls(mc_bins, z_bins, event_data, weights)
         if pastro_threshold is not None:
-            return res.filter_events(pastro_threshold)
+            res = res.filter_events(pastro_threshold, observing_runs=observing_runs, filter_valid_mcz=filter_valid_mcz)
         return res
 
     def __repr__(self):
