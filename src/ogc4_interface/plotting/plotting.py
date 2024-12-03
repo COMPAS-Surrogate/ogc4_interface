@@ -248,7 +248,6 @@ def plot_event_mcz_uncertainty(data: pd.DataFrame, pass_fail=None):
     #     ax.xaxis.set_tick_params(which="both", top=True, bottom=True, labeltop=True, labelbottom=True)
     #
 
-
     # add a horizontal line everytime the observing run changes and label the observing run
     for i, run in enumerate(obs_run):
         if i == 0:

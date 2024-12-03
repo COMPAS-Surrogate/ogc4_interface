@@ -39,7 +39,12 @@ class PopulationMcZ:
         self.n_events, self.n_z_bins, self.n_mc_bins = weights.shape
 
     @classmethod
-    def load(cls, pastro_threshold=None, observing_runs=['O3a', 'O3b'], filter_valid_mcz=True):
+    def load(
+        cls,
+        pastro_threshold=None,
+        observing_runs=["O3a", "O3b"],
+        filter_valid_mcz=True,
+    ):
         fpath = Cacher(URL).fpath
         logger.info(f"Loading OGC4 McZ population from {fpath}")
         with h5py.File(fpath, "r") as f:
@@ -47,24 +52,37 @@ class PopulationMcZ:
             z_bins = f["z_bins"][()]
             event_data = pd.DataFrame.from_records(f["event_data"][()])
             event_data["Name"] = event_data["Name"].str.decode("utf-8")
-            event_data["ObservingRun"] = event_data["Name"].apply(Event.name_to_observing_run)
+            event_data["ObservingRun"] = event_data["Name"].apply(
+                Event.name_to_observing_run
+            )
             weights = f["weights"][()]
-
 
         assert all(
             [
                 col in event_data.columns
-                for col in ["Name", "srcmchirp", "redshift", "Pastro", "ObservingRun"]
+                for col in [
+                    "Name",
+                    "srcmchirp",
+                    "redshift",
+                    "Pastro",
+                    "ObservingRun",
+                ]
             ]
         )
         assert weights.shape == (len(event_data), len(z_bins), len(mc_bins))
         res = cls(mc_bins, z_bins, event_data, weights)
         if pastro_threshold is not None:
-            res = res.filter_events(pastro_threshold, observing_runs=observing_runs, filter_valid_mcz=filter_valid_mcz)
+            res = res.filter_events(
+                pastro_threshold,
+                observing_runs=observing_runs,
+                filter_valid_mcz=filter_valid_mcz,
+            )
         return res
 
     def __repr__(self):
-        return "OGC4_McZ(n={}, bins=[{}, {}], {})".format(*self.weights.shape, self.runs_spanned)
+        return "OGC4_McZ(n={}, bins=[{}, {}], {})".format(
+            *self.weights.shape, self.runs_spanned
+        )
 
     def plot_weights(self, title=False):
         weights = self.weights.copy()
@@ -105,9 +123,7 @@ class PopulationMcZ:
     def get_pass_fail(self, threshold=0.95):
         mcz_pass = self.get_pass_mc_z()
         pastro_pass = self.get_pass_pastro(threshold)
-        return [
-            mcz and p for mcz, p in zip(mcz_pass, pastro_pass)
-        ]
+        return [mcz and p for mcz, p in zip(mcz_pass, pastro_pass)]
 
     def get_pass_pastro(self, threshold=0.95):
         return [
@@ -124,29 +140,37 @@ class PopulationMcZ:
         z_pass = [
             z_rng[0] <= z <= z_rng[1] for z in self.event_data["redshift"]
         ]
-        return [
-            mc and z for mc, z in zip(mc_pass, z_pass)
-        ]
+        return [mc and z for mc, z in zip(mc_pass, z_pass)]
 
-    def filter_events(self, threshold=0.95, filter_valid_mcz=True,  observing_runs=['O1', 'O2', 'O3a', 'O3b']):
+    def filter_events(
+        self,
+        threshold=0.95,
+        filter_valid_mcz=True,
+        observing_runs=["O1", "O2", "O3a", "O3b"],
+    ):
         pass_fail = self.get_pass_pastro(threshold)
         n_pass = sum(pass_fail)
-        logger.info(f"Filtering events with Pastro > {threshold} [{self.n_events} -> {n_pass}]")
+        logger.info(
+            f"Filtering events with Pastro > {threshold} [{self.n_events} -> {n_pass}]"
+        )
         if filter_valid_mcz:
             pass_fail = [
                 p and mcz for p, mcz in zip(pass_fail, self.get_pass_mc_z())
             ]
-            logger.info(f"Filtering events with valid mcz [{n_pass} -> {sum(pass_fail)}]")
+            logger.info(
+                f"Filtering events with valid mcz [{n_pass} -> {sum(pass_fail)}]"
+            )
         event_data = self.event_data[pass_fail]
         weights = self.weights[pass_fail]
-
 
         init_n = len(event_data)
         obs_mask = event_data["ObservingRun"].isin(observing_runs)
         weights = weights[obs_mask]
         event_data = event_data[obs_mask]
         if init_n != len(event_data):
-            logger.info(f"Filtering events with ObservingRun == {observing_runs}: [{init_n} -> {len(event_data)}]")
+            logger.info(
+                f"Filtering events with ObservingRun == {observing_runs}: [{init_n} -> {len(event_data)}]"
+            )
         return PopulationMcZ(self.mc_bins, self.z_bins, event_data, weights)
 
     def plot_event_mcz_estimates(self):
@@ -157,11 +181,10 @@ class PopulationMcZ:
         axes[1].axvspan(self.mc_bins[-1], 100, color="k", alpha=0.1)
         return fig, axes
 
-
     @property
-    def runs_spanned(self)->List[str]:
+    def runs_spanned(self) -> List[str]:
         return list(set(self.event_data["ObservingRun"].unique()))
 
     @property
-    def duration(self)->float:
+    def duration(self) -> float:
         return ObservingRun.get_total_durations(self.runs_spanned)

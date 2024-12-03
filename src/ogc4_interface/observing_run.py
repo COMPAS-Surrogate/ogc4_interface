@@ -27,43 +27,42 @@ PERIODS = dict(
     O3a=(datetime(2019, 4, 1), datetime(2019, 10, 1)),
     O3b=(datetime(2019, 11, 1), datetime(2020, 3, 27)),
     O4a=(datetime(2023, 5, 24), datetime(2024, 1, 16)),
-    O4b=(datetime(2024, 4, 10), datetime(2025, 6, 9))
+    O4b=(datetime(2024, 4, 10), datetime(2025, 6, 9)),
 )
 DURATIONS = dict(
-    O1=5685921, # https://gwosc.org/timeline/show/O1/H1_DATA*L1_DATA/
-    O2=13302397, # https://gwosc.org/timeline/show/O2/H1_DATA*L1_DATA/
-    O3a=11218675, # https://gwosc.org/timeline/show/O3a_4KHZ_R1/H1_DATA*L1_DATA/
-    O3b=9810816, # https://gwosc.org/timeline/show/O3b_4KHZ_R1/H1_DATA*L1_DATA/
+    O1=5685921,  # https://gwosc.org/timeline/show/O1/H1_DATA*L1_DATA/
+    O2=13302397,  # https://gwosc.org/timeline/show/O2/H1_DATA*L1_DATA/
+    O3a=11218675,  # https://gwosc.org/timeline/show/O3a_4KHZ_R1/H1_DATA*L1_DATA/
+    O3b=9810816,  # https://gwosc.org/timeline/show/O3b_4KHZ_R1/H1_DATA*L1_DATA/
     O4a=None,
-    O4b=None
+    O4b=None,
 )
 
 
 class ObservingRun:
-    def __init__(self, name:str):
+    def __init__(self, name: str):
         self.name = name
         self.start, self.end = PERIODS[name]
         self.duration = DURATIONS[name]
 
-    def __str__(self)->str:
+    def __str__(self) -> str:
         return self.name
 
-    def __eq__(self, other:str):
+    def __eq__(self, other: str):
         return self.name == other
 
-    def duration(self)->int:
+    def duration(self) -> int:
         return (self.end - self.start).days
 
     @classmethod
-    def from_date(cls, date:datetime)->"ObservingRun":
+    def from_date(cls, date: datetime) -> "ObservingRun":
         for period, (start, end) in PERIODS.items():
             if start <= date <= end:
                 return cls(period)
         raise ValueError(f"Date {date} is not within any observation period")
 
-
     @staticmethod
-    def get_total_durations(runs:List[str]=None)->float:
+    def get_total_durations(runs: List[str] = None) -> float:
         """In years"""
         if runs is None:
             seconds = sum(DURATIONS.values())

@@ -114,19 +114,18 @@ class Event:
 
         return weights
 
-
     @property
-    def trigger_date(self)->datetime:
+    def trigger_date(self) -> datetime:
         return self.name_to_date(self.name)
 
     @property
-    def observing_run(self)->str:
+    def observing_run(self) -> str:
         return self.name_to_observing_run(self.name)
 
     @staticmethod
-    def name_to_date(name:str)->datetime:
+    def name_to_date(name: str) -> datetime:
         return datetime.strptime(name, "GW%y%m%d_%H%M%S")
 
     @staticmethod
-    def name_to_observing_run(name:str)->str:
+    def name_to_observing_run(name: str) -> str:
         return ObservingRun.from_date(Event.name_to_date(name)).name
