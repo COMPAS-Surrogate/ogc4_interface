@@ -1,16 +1,16 @@
 import os
+from typing import List
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
-from typing import List
 
-from .observing_run import ObservingRun
-from .event import Event
 from .cacher import Cacher
+from .event import Event
 from .logger import logger
+from .observing_run import ObservingRun
 from .plotting import (
     CTOP,
     add_cntr,

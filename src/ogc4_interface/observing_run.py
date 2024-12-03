@@ -18,8 +18,8 @@ There is a two month commissioning break planned from January to March 2024, aft
 
 """
 
-from typing import List
 from datetime import datetime
+from typing import List
 
 PERIODS = dict(
     O1=(datetime(2015, 9, 12), datetime(2016, 1, 19)),

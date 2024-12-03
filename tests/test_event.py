@@ -1,5 +1,7 @@
-import numpy as np
 from datetime import datetime
+
+import numpy as np
+
 from ogc4_interface.event import Event
 
 
