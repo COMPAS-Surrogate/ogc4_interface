@@ -30,7 +30,7 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
 ]
 dependencies = [
-    "pycbc",
+    "pycbc>=2.7.0",
     "colorlog",
     "tqdm",
     "h5py",
