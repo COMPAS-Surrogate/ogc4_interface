@@ -15,8 +15,10 @@ following plans to make further upgrades for the O5 run.[2][6]
 Updated observing plans are published on the official website, containing the latest information on these runs.[6]
 There is a two month commissioning break planned from January to March 2024, after which observations will resume for the remainder of O4.[7]
 
+
 """
 
+from typing import List
 from datetime import datetime
 
 PERIODS = dict(
@@ -27,12 +29,21 @@ PERIODS = dict(
     O4a=(datetime(2023, 5, 24), datetime(2024, 1, 16)),
     O4b=(datetime(2024, 4, 10), datetime(2025, 6, 9))
 )
+DURATIONS = dict(
+    O1=5685921, # https://gwosc.org/timeline/show/O1/H1_DATA*L1_DATA/
+    O2=13302397, # https://gwosc.org/timeline/show/O2/H1_DATA*L1_DATA/
+    O3a=11218675, # https://gwosc.org/timeline/show/O3a_4KHZ_R1/H1_DATA*L1_DATA/
+    O3b=9810816, # https://gwosc.org/timeline/show/O3b_4KHZ_R1/H1_DATA*L1_DATA/
+    O4a=None,
+    O4b=None
+)
 
 
 class ObservingRun:
     def __init__(self, name:str):
         self.name = name
         self.start, self.end = PERIODS[name]
+        self.duration = DURATIONS[name]
 
     def __str__(self)->str:
         return self.name
@@ -51,3 +62,10 @@ class ObservingRun:
         raise ValueError(f"Date {date} is not within any observation period")
 
 
+    @staticmethod
+    def get_total_durations(runs:List[str]=None)->float:
+        """In years"""
+        if runs is None:
+            seconds = sum(DURATIONS.values())
+        seconds = sum([DURATIONS[run] for run in runs])
+        return seconds / 60 / 60 / 24 / 365.25
