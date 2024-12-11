@@ -1,7 +1,18 @@
 # CHANGELOG
 
 
+## v0.0.1 (2024-12-11)
+
+### Bug Fixes
+
+* fix: add pypi badge ([`170119f`](https://github.com/COMPAS-Surrogate/ogc4_interface/commit/170119f45dc4d1f9a13236b958384bb482d47916))
+
+
 ## v0.0.0 (2024-12-11)
+
+### Chores
+
+* chore(release): 0.0.0 ([`136fbf5`](https://github.com/COMPAS-Surrogate/ogc4_interface/commit/136fbf5027f2206e63b8783d4f4194f93d44fff7))
 
 ### Unknown
 
