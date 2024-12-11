@@ -1,4 +1,7 @@
 # OGC-4 Interface
+
+[![PyPI version](https://badge.fury.io/py/compas-surrogate.ogc4-interface.svg?icon=si%3Apython)](https://badge.fury.io/py/compas-surrogate.ogc4-interface)
+
 This repo interfaces with [OGC-4](https://github.com/gwastro/4-ogc) to read in posterior samples for the LVK GW events.
 
 The `PopulationMcZ` class is the main API interface, and is used to get the Mc-z posterior samples and
