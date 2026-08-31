@@ -156,7 +156,7 @@ def plot_event_mcz_uncertainty(data: pd.DataFrame, pass_fail=None):
         "Name redshift redshift_plus redshift_minus srcmchirp srcmchirp_plus srcmchirp_minus Pastro ObservingRun pass".split()
     ].values
 
-    (names, z, zup, zlow, mc, mcup, mclow, pastro, obs_run, pass_) = data.T
+    names, z, zup, zlow, mc, mcup, mclow, pastro, obs_run, pass_ = data.T
     y = np.arange(len(names))
 
     fig, axes = plt.subplots(1, 2, sharey=True, figsize=(4.5, 0.25 * n_events))
