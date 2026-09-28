@@ -45,5 +45,3 @@ jobs:
       - name: pypi-publish
         if: steps.release.outputs.released == 'true'
         uses: pypa/gh-action-pypi-publish@v1.12.3
-
-
